@@ -108,17 +108,27 @@ int __declspec(dllexport) APIENTRY UserSourceDefinition(double* data) {
     // Find the half-cone angle from the fiber NA
     double half_cone_angle = std::asin(fiber_na);
 
-    // This is a uniform distribution where we draw theta_x/y
-    std::uniform_real_distribution<double> draw_theta(-half_cone_angle, half_cone_angle);
+    // This is a uniform distribution where we draw a z component on the unit sphere
+    std::uniform_real_distribution<double> draw_z_dir(std::cos(half_cone_angle), 1.0);
 
-    // Generate random angles uniformly within the half-cone angle in the X-Z, and Y-Z planes
-    double theta_x = draw_theta(gen);
-    double theta_y = draw_theta(gen);
+    // Draw a random z for the direction vector
+    double z_dir = draw_z_dir(gen);
 
-    // Transform theta_x/y into LMN direction cosine
-    double nn = 1.0 / std::sqrt(1.0 + std::tan(theta_x) * std::tan(theta_x) + std::tan(theta_y) * std::tan(theta_y));
-    double ll = nn * std::tan(theta_x);
-    double mm = nn * std::tan(theta_y);
+    // Calculate theta and draw phi uniformly in [0, 2*pi]
+    double theta = std::acos(z_dir);
+    double phi = draw_uu(gen) * 2 * PI;
+
+    // Get direction direction in Cartesian units
+    double x_dir = std::sin(theta) * std::cos(phi);
+    double y_dir = std::sin(theta) * std::sin(phi);
+
+    // Get norm of direction vector
+    double norm = std::sqrt(x_dir * x_dir + y_dir * y_dir + z_dir * z_dir);
+
+    // Transform Cartesian vector into direction cosine
+    double ll = x_dir / norm;
+    double mm = y_dir / norm;
+    double nn = z_dir / norm;
 
     // Return accepted ray
     data[1] = xx;
